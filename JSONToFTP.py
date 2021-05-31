@@ -8,6 +8,7 @@ import tzlocal
 import logging
 import pysftp
 import paramiko
+import time
 
 class My_Connection(pysftp.Connection):
     def __init__(self, *args, **kwargs):
@@ -31,6 +32,9 @@ logging.basicConfig(filename="log.txt", level=logging.INFO, format='%(asctime)s 
 logging.info("-")
 logging.info("Start work")
 fromNumber = conftest.get_setting(path, 'Records', 'LastNumber')
+sleep = 0
+sleep = int(conftest.get_setting(path, 'General', 'sleep'))
+
 
 cnopts = pysftp.CnOpts()
 cnopts.hostkeys = None
@@ -68,7 +72,6 @@ while hasrecords:
 
 
     for record in r.json():
-        #time.sleep(2)
         lastNumber = conftest.get_setting(path, 'Records', 'LastNumber')
         recordId = record["id"]
 
@@ -107,6 +110,7 @@ while hasrecords:
             if str(item).startswith(lastNumber):
                 os.remove(item)
 
+        time.sleep(sleep)
 
 
         conftest.update_setting(path, "Records", "LastNumber", recordId)

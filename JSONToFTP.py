@@ -1,14 +1,19 @@
 import json
 import requests
 import conftest
-from ftplib import FTP
 from datetime import datetime
 import pytz
 import os
 import tzlocal
 import logging
+import pysftp
+import paramiko
 
-
+class My_Connection(pysftp.Connection):
+    def __init__(self, *args, **kwargs):
+        self._sftp_live = False
+        self._transport = None
+        super().__init__(*args, **kwargs)
 
 def utctodate(utc_n):
     utc = pytz.utc
@@ -27,13 +32,16 @@ logging.info("-")
 logging.info("Start work")
 fromNumber = conftest.get_setting(path, 'Records', 'LastNumber')
 
+cnopts = pysftp.CnOpts()
+cnopts.hostkeys = None
+
 try:
-    ftp = FTP()
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
     HOST = conftest.get_setting(path, 'FTP', 'HOST')
     LOGIN = conftest.get_setting(path, 'FTP', 'LOGIN')
     PASS = conftest.get_setting(path, 'FTP', 'PASS')
-    ftp.connect(HOST)
-    ftp.login(LOGIN, PASS)
+    sftp = My_Connection(HOST, username=LOGIN, password=PASS, cnopts=cnopts)
 except:
     logging.error("FTP: Connect error host - {}, login - , pass - ".format(HOST, LOGIN, PASS))
     logging.info("Exit")
@@ -79,12 +87,20 @@ while hasrecords:
             f.write(r.content)
 
         # upload to ftp
-        with open(filename, 'rb') as fobj:
-            ftp.storbinary('STOR ' + filename, fobj, 1024)
-        logging.info("FTP: upload file {}".format(filename))
-        with open(recordId + '.mp3', 'rb') as fobj:
-            ftp.storbinary('STOR ' + recordId + '.mp3', fobj, 1024)
-        logging.info("FTP: upload file {}".format(recordId + '.mp3'))
+        try:
+            sftp.put(filename)
+            logging.info("FTP: upload file {}".format(filename))
+            sftp.put(recordId + '.mp3')
+            logging.info("FTP: upload file {}".format(recordId + '.mp3'))
+        except paramiko.ssh_exception.SSHException as e:
+            print('SSH error, you need to add the public key of your remote in your local known_hosts file first.', e)
+            logging.error("FTP: SSH error, you need to add the public key of your remote in your "
+                          "local known_hosts file first. - {}".format(e))
+            logging.info("SystemExit")
+        except Exception as e:
+            logging.error("FTP: Upload error - {}".format(e))
+            logging.info("SystemExit")
+            raise SystemExit
 
         # delete file from dir
         for item in os.listdir():

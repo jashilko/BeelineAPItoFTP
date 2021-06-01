@@ -24,16 +24,17 @@ def utctodate(utc_n):
     time = utc_time.replace(tzinfo=pytz.utc).astimezone(local_timezone).time()
     dt = str(date)+ "T" + str(time)
     return dt
-
-path = 'settings.ini'
+dir = os.path.dirname(__file__) + '/'
+print("Current dir - " + dir)
+path = dir + 'settings.ini'
 date_log = datetime.now().strftime("%Y-%m-%d")
 logmode = conftest.get_setting(path, 'General', 'logmode')
 if logmode == 'INFO':
-    logging.basicConfig(filename="log/" + date_log + "-log.txt", level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename = dir + "log/" + date_log + "-log.txt", level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 elif logmode == 'DEBUG':
-    logging.basicConfig(filename="log/" + date_log + "-log.txt", level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename=dir + "log/" + date_log + "-log.txt", level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 else:
-    logging.basicConfig(filename="log/" + date_log + "-log.txt", level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename=dir + "log/" + date_log + "-log.txt", level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
 logging.info("-")
 logging.info("Start work")
@@ -95,21 +96,21 @@ while hasrecords:
         infofile["respondentNumber"] = record['phone']
         infofile["dateTime"] = utctodate(int(str(record['date'])[:10]))
         filename = recordId + '.json'
-        with open(filename, 'w', encoding='utf8') as f:
+        with open(dir + filename, 'w', encoding='utf8') as f:
             json.dump(infofile, f, ensure_ascii=False)
         if firstFile == "":
             firstFile = recordId
 
         header = {'X-MPBX-API-AUTH-TOKEN': JsonToFTPToken}
         r = requests.get('https://cloudpbx.beeline.ru/apis/portal/v2/records/' + recordId + '/download', headers=header)
-        with open(recordId + '.mp3', 'wb') as f:
+        with open(dir + recordId + '.mp3', 'wb') as f:
             f.write(r.content)
 
         # upload to ftp
         try:
-            sftp.put(filename)
+            sftp.put(dir + filename)
             logging.debug("FTP: upload file {}".format(filename))
-            sftp.put(recordId + '.mp3')
+            sftp.put(dir + recordId + '.mp3')
             logging.debug("FTP: upload file {}".format(recordId + '.mp3'))
         except paramiko.ssh_exception.SSHException as e:
             print('SSH error, you need to add the public key of your remote in your local known_hosts file first.', e)
@@ -122,7 +123,7 @@ while hasrecords:
             raise SystemExit
 
         # delete file from dir
-        for item in os.listdir():
+        for item in os.listdir(dir):
             if str(item).startswith(lastNumber):
                 os.remove(item)
 

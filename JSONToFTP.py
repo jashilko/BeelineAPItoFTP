@@ -125,7 +125,7 @@ while hasrecords:
         # delete file from dir
         for item in os.listdir(dir):
             if str(item).startswith(lastNumber):
-                os.remove(item)
+                os.remove(dir + item)
 
         time.sleep(sleep)
 

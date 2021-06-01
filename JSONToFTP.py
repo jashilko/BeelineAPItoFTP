@@ -26,8 +26,14 @@ def utctodate(utc_n):
     return dt
 
 path = 'settings.ini'
-logging.basicConfig(filename="log.txt", level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
+date_log = datetime.now().strftime("%Y-%m-%d")
+logmode = conftest.get_setting(path, 'General', 'logmode')
+if logmode == 'INFO':
+    logging.basicConfig(filename="log/" + date_log + "-log.txt", level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+elif logmode == 'DEBUG':
+    logging.basicConfig(filename="log/" + date_log + "-log.txt", level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+else:
+    logging.basicConfig(filename="log/" + date_log + "-log.txt", level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
 logging.info("-")
 logging.info("Start work")
@@ -55,6 +61,8 @@ except:
 MaxCount = int(conftest.get_setting(path, 'General', 'limitdownload'))
 NumCount = 0
 hasrecords = True
+firstFile = ""
+lastfile = ""
 
 while hasrecords:
     JsonToFTPToken = conftest.get_setting(path, 'BeelineAPI', 'JsonToFTPToken')
@@ -77,12 +85,20 @@ while hasrecords:
 
         infofile = {}
         infofile["employeeId"] = record['abonent']['phone']
-        infofile["direction"] = record['direction']
+        direction = ""
+        if record['direction'] == "OUTBOUND":
+            direction = "out"
+        elif record['direction'] == "INBOUND":
+            direction = "in"
+        infofile["direction"] = direction
+        infofile["language"] = "ru"
         infofile["respondentNumber"] = record['phone']
-        infofile["date"] = utctodate(int(str(record['date'])[:10]))
+        infofile["dateTime"] = utctodate(int(str(record['date'])[:10]))
         filename = recordId + '.json'
         with open(filename, 'w', encoding='utf8') as f:
             json.dump(infofile, f, ensure_ascii=False)
+        if firstFile == "":
+            firstFile = recordId
 
         header = {'X-MPBX-API-AUTH-TOKEN': JsonToFTPToken}
         r = requests.get('https://cloudpbx.beeline.ru/apis/portal/v2/records/' + recordId + '/download', headers=header)
@@ -92,9 +108,9 @@ while hasrecords:
         # upload to ftp
         try:
             sftp.put(filename)
-            logging.info("FTP: upload file {}".format(filename))
+            logging.debug("FTP: upload file {}".format(filename))
             sftp.put(recordId + '.mp3')
-            logging.info("FTP: upload file {}".format(recordId + '.mp3'))
+            logging.debug("FTP: upload file {}".format(recordId + '.mp3'))
         except paramiko.ssh_exception.SSHException as e:
             print('SSH error, you need to add the public key of your remote in your local known_hosts file first.', e)
             logging.error("FTP: SSH error, you need to add the public key of your remote in your "
@@ -119,5 +135,6 @@ while hasrecords:
             hasrecords = False
             break
 
-logging.info("total upload {} files".format(NumCount))
+lastfile = recordId
+logging.info("total upload {} files. First - {}, last - {}".format(NumCount, firstFile, lastfile))
 logging.info("End work")

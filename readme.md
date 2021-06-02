@@ -15,7 +15,8 @@
 4. Клонировать репозиторий: git clone https://github.com/jashilko/BeelineAPItoFTP.git
 5. Установить зависимости (библиотеки) для работы скрипта из файла requirements.txt: pip install -r requirements.txt
 6. Отредактировать файл настроек settings.ini
-7. Запустить скрипт python3 JSONToFTP.py
+7. Создать папку для логов в директории со скриптом /log
+8. Запустить скрипт python3 JSONToFTP.py
 
 ## Файл настроек
 Примерный вид: 

@@ -78,6 +78,7 @@ while hasrecords:
     if len(r.json()) == 0:
         logging.info("Beeline: No records")
         logging.info("Exit")
+        raise SystemExit
 
 
     for record in r.json():
@@ -117,6 +118,7 @@ while hasrecords:
             logging.error("FTP: SSH error, you need to add the public key of your remote in your "
                           "local known_hosts file first. - {}".format(e))
             logging.info("SystemExit")
+            raise SystemExit
         except Exception as e:
             logging.error("FTP: Upload error - {}".format(e))
             logging.info("SystemExit")

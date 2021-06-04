@@ -75,7 +75,8 @@ while hasrecords:
         logging.error("Beeline: Response answer - {}".format(r.status_code))
         logging.info("Exit")
         raise SystemExit
-    if len(r.json()) == 0:
+    jsoncount = len(r.json())
+    if jsoncount == 0:
         logging.info("Beeline: No records")
         logging.info("Exit")
         raise SystemExit
@@ -124,7 +125,7 @@ while hasrecords:
             logging.info("SystemExit")
             raise SystemExit
 
-        # delete file from dir
+        #delete file from dir
         for item in os.listdir(dir):
             if str(item).startswith(lastNumber):
                 os.remove(dir + item)
@@ -137,6 +138,8 @@ while hasrecords:
         if NumCount >= MaxCount and MaxCount != 0:
             hasrecords = False
             break
+    if jsoncount < MaxCount:
+        break
 
 lastfile = recordId
 logging.info("total upload {} files. First - {}, last - {}".format(NumCount, firstFile, lastfile))
